@@ -19,7 +19,7 @@ class Sidebar(QWidget):
         # Создаем основной layout
         layout = QVBoxLayout(self)
         layout.setSpacing(0)  # Убираем отступы между элементами
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(10, 10, 10, 20)
         
         # Добавляем логотип
         logo_label = QLabel()
@@ -27,7 +27,8 @@ class Sidebar(QWidget):
         if not logo_pixmap.isNull():
             logo_label.setPixmap(logo_pixmap.scaled(200, 100, Qt.AspectRatioMode.KeepAspectRatio))
         else:
-            logo_label.setText("<h1>Gushub</h1>")
+            logo_label.setText("<h1>КМПО РАНХиГС</h1>")
+            logo_label.setMargin(10)
         logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(logo_label)
         
@@ -37,7 +38,7 @@ class Sidebar(QWidget):
         # Создаем древовидное представление
         self.tree_view = QTreeView()
         self.tree_view.setModel(self._create_courses_model())
-        self.tree_view.clicked.connect(self.handle_item_click)
+        self.tree_view.clicked.connect(self._handle_item_click)
         self.tree_view.expandAll()  # Раскрываем все элементы по умолчанию
         
         # Настройки для корректной работы прокрутки
@@ -67,7 +68,7 @@ class Sidebar(QWidget):
         # Добавляем контейнер с кнопками в основной layout
         layout.addWidget(buttons_widget)
     
-    def handle_item_click(self, index):
+    def _handle_item_click(self, index):
         """Обработка клика по элементу дерева"""
         item = self.tree_view.model().itemFromIndex(index)
         if item and item.data():
