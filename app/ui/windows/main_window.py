@@ -22,11 +22,6 @@ class MainWindow(QMainWindow):
         
         # Создаем контейнер для страниц
         self.content_stack = QStackedWidget()
-        self.content_stack.setStyleSheet("""
-            QStackedWidget {
-                background-color: #f5f5f5;
-            }
-        """)
         
         # Создаем и добавляем страницы
         self.welcome_page = QWidget()
@@ -36,7 +31,6 @@ class MainWindow(QMainWindow):
         # Добавляем приветствие
         from PyQt6.QtWidgets import QLabel
         welcome_label = QLabel("Добро пожаловать в Gushub!")
-        welcome_label.setStyleSheet("font-size: 24px;")
         welcome_layout.addWidget(welcome_label)
         
         # Показываем информацию об авторизации
@@ -45,7 +39,6 @@ class MainWindow(QMainWindow):
         github_token = settings.get_github_token()
         
         auth_info = QLabel(f"Вы авторизованы как: {login}\nGitHub токен: {github_token[:8]}...")
-        auth_info.setStyleSheet("font-size: 14px;")
         welcome_layout.addWidget(auth_info)
         
         # Добавляем страницы в стек

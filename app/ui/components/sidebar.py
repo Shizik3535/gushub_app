@@ -104,7 +104,7 @@ class Sidebar(QWidget):
                 
                 for lesson in lessons:
                     # Создаем элемент урока
-                    lesson_item = QStandardItem(f"[Урок] {lesson['title']}")
+                    lesson_item = QStandardItem(lesson['title'])
                     lesson_item.setEditable(False)
                     lesson_item.setData(("lesson", lesson['id']))
                     
@@ -113,7 +113,7 @@ class Sidebar(QWidget):
                     
                     for task in tasks:
                         # Создаем элемент задачи
-                        task_item = QStandardItem(f"[Задание] {task['title']}")
+                        task_item = QStandardItem(task['title'])
                         task_item.setEditable(False)
                         task_item.setData(("task", task['id']))
                         lesson_item.appendRow(task_item)
