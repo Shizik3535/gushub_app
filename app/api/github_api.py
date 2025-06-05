@@ -57,15 +57,43 @@ class GitHubAPI:
         except GithubException as e:
             raise RuntimeError("Ошибка при создании модуля: " + str(e))
         
-    # Уроки
-    def create_lesson(self, repo: Repository.Repository, module_path: str, filename: str, content: str,
-                      commit_message: str) -> str:
+    def delete_module(self, repo, module_name: str) -> None:
+        """Удаляет модуль из репозитория"""
         try:
-            path = f"{module_path}/{filename}.md"
-            repo.create_file(path, commit_message, content, branch="main")
+            # Получаем содержимое директории модуля
+            module_path = f"{module_name}/README.md"
+            contents = repo.get_contents(module_path)
+            
+            # Удаляем файл модуля
+            repo.delete_file(
+                path=module_path,
+                message=f"Удаление модуля {module_name}",
+                sha=contents.sha
+            )
+            
+        except Exception as e:
+            raise Exception(f"Ошибка при удалении модуля: {str(e)}")
+
+    # Уроки
+    def create_lesson(self, repo: Repository.Repository, module_name: str, lesson_title: str, file_path: str) -> str:
+        """Создание урока в репозитории"""
+        try:
+            # Читаем содержимое файла
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Создаем файл урока
+            path = f"{module_name}/{lesson_title}.md"
+            repo.create_file(
+                path,
+                f"Add lesson {lesson_title}",
+                content,
+                branch="main"
+            )
             return path
-        except GithubException as e:
-            raise RuntimeError("Ошибка при создании урока: " + str(e))
+            
+        except Exception as e:
+            raise Exception(f"Ошибка при создании урока: {str(e)}")
         
     def update_lesson(self, repo: Repository.Repository, path: str, new_content: str, commit_message: str):
         try:

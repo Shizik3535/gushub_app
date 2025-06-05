@@ -22,7 +22,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS modules (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 course_id INTEGER,
-                github_path TEXT UNIQUE,
+                github_path TEXT,
                 title TEXT,
                 description TEXT,
                 site_id INTEGER,
@@ -34,7 +34,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS lessons (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 module_id INTEGER,
-                github_path TEXT UNIQUE,
+                github_path TEXT,
                 title TEXT,
                 raw_url TEXT,
                 site_id INTEGER,
@@ -46,7 +46,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 lesson_id INTEGER,
-                github_path TEXT UNIQUE,
+                github_path TEXT,
                 title TEXT,
                 raw_url TEXT,
                 site_id INTEGER,
@@ -251,6 +251,21 @@ class Database:
             DELETE FROM tasks WHERE id = ?
         ''', (task_id,))
         self.conn.commit()
+
+    def get_tasks_by_module(self, module_id: int) -> list[dict]:
+        """Получение всех задач в модуле"""
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT t.id, t.title, t.github_path, t.raw_url
+            FROM tasks t
+            JOIN lessons l ON t.lesson_id = l.id
+            WHERE l.module_id = ?
+            ORDER BY t.id
+        """, (module_id,))
+        rows = cursor.fetchall()
+        if rows:
+            return [{description[0]: row[i] for i, description in enumerate(cursor.description)} for row in rows]
+        return []
 
     def close(self) -> None:
         """Закрытие соединения с базой данных"""

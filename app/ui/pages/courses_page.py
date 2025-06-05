@@ -10,6 +10,8 @@ from app.settings import AppSettings
 class CoursesPage(QWidget):
     # Сигнал для обновления дерева
     tree_update_needed = pyqtSignal()
+    # Сигнал для перехода к модулю
+    module_selected = pyqtSignal(int)
     
     def __init__(self):
         super().__init__()
@@ -179,22 +181,35 @@ class CoursesPage(QWidget):
                     # Получаем информацию о курсе
                     course = self.db.get_course(self.current_course_id)
                     if course and course['github_path']:
+                        # Проверяем, существует ли уже модуль с таким названием
+                        existing_modules = self.db.get_modules_by_course(self.current_course_id)
+                        if any(module['title'].lower() == title.lower() for module in existing_modules):
+                            QMessageBox.warning(
+                                self,
+                                "Предупреждение",
+                                "Модуль с таким названием уже существует в этом курсе"
+                            )
+                            return
+                        
                         # Получаем репозиторий курса
                         repo = self.github_api.get_course(course['title'])
                         # Создаем модуль в репозитории
                         module_path = self.github_api.create_module(repo, title, description)
-                    
-                    # Добавляем модуль в базу данных
-                    self.db.add_module(self.current_course_id, module_path, title, description)
-                    # Отправляем сигнал для обновления дерева
-                    self.tree_update_needed.emit()
-                    
-                    # Показываем сообщение об успешном создании
-                    QMessageBox.information(
-                        self,
-                        "Успех",
-                        f"Модуль '{title}' успешно создан в курсе '{course['title']}'"
-                    )
+                        
+                        # Добавляем модуль в базу данных
+                        module_id = self.db.add_module(self.current_course_id, module_path, title, description)
+                        # Отправляем сигнал для обновления дерева
+                        self.tree_update_needed.emit()
+                        
+                        # Показываем сообщение об успешном создании
+                        QMessageBox.information(
+                            self,
+                            "Успех",
+                            f"Модуль '{title}' успешно создан в курсе '{course['title']}'"
+                        )
+                        
+                        # Переходим к созданному модулю
+                        self.module_selected.emit(module_id)
                     
                 except Exception as e:
                     QMessageBox.critical(

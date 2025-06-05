@@ -3,6 +3,7 @@ from PyQt6.QtCore import Qt
 from app.settings import AppSettings
 from app.ui.components.sidebar import Sidebar
 from app.ui.pages.courses_page import CoursesPage
+from app.ui.pages.modules_page import ModulesPage
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -21,7 +22,6 @@ class MainWindow(QMainWindow):
         
         # Создаем сайдбар
         self.sidebar = Sidebar()
-        self.sidebar.item_selected.connect(self.handle_item_selection)
         
         # Создаем контейнер для основного контента
         self.content_stack = QStackedWidget()
@@ -31,6 +31,11 @@ class MainWindow(QMainWindow):
         self.courses_page.tree_update_needed.connect(self.sidebar.refresh)
         self.content_stack.addWidget(self.courses_page)
         
+        # Создаем страницу модулей
+        self.modules_page = ModulesPage()
+        self.modules_page.tree_update_needed.connect(self.sidebar.refresh)
+        self.content_stack.addWidget(self.modules_page)
+        
         # Добавляем виджеты в layout
         layout.addWidget(self.sidebar)
         layout.addWidget(self.content_stack)
@@ -38,10 +43,29 @@ class MainWindow(QMainWindow):
         # Устанавливаем пропорции layout
         layout.setStretch(0, 1)  # Сайдбар
         layout.setStretch(1, 4)  # Контент
+        
+        # Подключаем сигналы
+        self.sidebar.item_selected.connect(self.handle_item_selection)
+        self.courses_page.tree_update_needed.connect(self.sidebar.refresh)
+        self.modules_page.tree_update_needed.connect(self.sidebar.refresh)
+        self.courses_page.module_selected.connect(self.handle_module_selection)
     
     def handle_item_selection(self, item_type: str, item_id: int):
-        """Обработка выбора элемента в сайдбаре"""
+        """Обработка выбора элемента в боковой панели"""
         if item_type == "course":
+            # Показываем страницу курсов
             self.courses_page.set_current_course(item_id)
+            self.content_stack.setCurrentWidget(self.courses_page)
+        elif item_type == "module":
+            # Показываем страницу модулей
+            self.modules_page.set_current_module(item_id)
+            self.content_stack.setCurrentWidget(self.modules_page)
         else:
+            # Скрываем обе страницы
+            self.content_stack.setCurrentWidget(self.courses_page)
             self.courses_page.set_current_course(None)
+    
+    def handle_module_selection(self, module_id: int):
+        """Обработка выбора модуля после его создания"""
+        self.modules_page.set_current_module(module_id)
+        self.content_stack.setCurrentWidget(self.modules_page)
