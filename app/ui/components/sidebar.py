@@ -6,7 +6,7 @@ from PyQt6.QtGui import QPixmap, QStandardItemModel, QStandardItem
 from app.database.database import Database
 
 class Sidebar(QWidget):
-    item_selected = pyqtSignal(str, int)  # Сигнал: тип элемента, id элемента
+    item_selected = pyqtSignal(str, object)  # Сигнал: тип элемента, id элемента (может быть None)
 
     def __init__(self):
         super().__init__()
@@ -61,6 +61,7 @@ class Sidebar(QWidget):
         # Добавляем кнопки
         self.analysis_button = QPushButton("Анализ")
         self.settings_button = QPushButton("Настройки")
+        self.settings_button.clicked.connect(self.handle_settings_click)
         
         buttons_layout.addWidget(self.analysis_button)
         buttons_layout.addWidget(self.settings_button)
@@ -131,3 +132,7 @@ class Sidebar(QWidget):
         """Обновление дерева"""
         self.tree_view.setModel(self._create_courses_model())
         self.tree_view.expandAll()
+
+    def handle_settings_click(self):
+        """Обработка клика по кнопке настроек"""
+        self.item_selected.emit("settings", None)

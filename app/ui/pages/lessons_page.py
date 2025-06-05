@@ -227,20 +227,27 @@ class LessonsPage(QWidget):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             title, file_path = dialog.get_task_data()
             
-            if not title:
-                QMessageBox.warning(self, "Ошибка", "Введите название задачи")
-                return
-                
-            if not file_path:
-                QMessageBox.warning(self, "Ошибка", "Выберите файл с задачей")
+            if not title or not file_path:
+                QMessageBox.warning(self, "Ошибка", "Заполните все поля")
                 return
             
-            # Проверяем уникальность названия
+            # Проверяем уникальность названия задачи
+            # Получаем все задачи в текущем уроке
             tasks = self.db.get_tasks_by_lesson(self.current_lesson_id)
-            for task in tasks:
-                if task['title'].lower() == title.lower():
-                    QMessageBox.warning(self, "Ошибка", "Задача с таким названием уже существует")
-                    return
+            if any(task['title'] == title for task in tasks):
+                QMessageBox.warning(self, "Ошибка", "Задача с таким названием уже существует в этом уроке")
+                return
+                
+            # Получаем все уроки в текущем модуле
+            lessons = self.db.get_lessons_by_module(module['id'])
+            if any(lesson['title'] == title for lesson in lessons):
+                QMessageBox.warning(self, "Ошибка", "Название задачи не может совпадать с названием урока в этом модуле")
+                return
+            
+            tasks = self.db.get_tasks_by_module(self.db.get_lesson(self.current_lesson_id)['module_id'])
+            if any(task['title'] == title for task in tasks):
+                QMessageBox.warning(self, "Ошибка", "Название задачи не может совпадать с названием задачи в этом модуле")
+                return
             
             try:
                 # Получаем репозиторий курса

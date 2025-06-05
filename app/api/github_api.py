@@ -125,9 +125,9 @@ class GitHubAPI:
         except GithubException as e:
             raise RuntimeError("Ошибка при создании задания: " + str(e))
         
-    def update_task(self, repo: Repository.Repository, path: str, new_content: str, commit_message: str):
+    def update_task(self, repo: Repository.Repository, path: str, new_content: str, commit_message: str, sha: str):
         try:
-            repo.update_file(path, commit_message, new_content, branch="main")
+            repo.update_file(path, commit_message, new_content, sha, branch="main")
         except GithubException as e:
             raise RuntimeError("Ошибка при обновлении задания: " + str(e))
         
