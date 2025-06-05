@@ -1,13 +1,13 @@
-from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
-                             QLabel, QLineEdit, QFileDialog)
+from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+                             QLineEdit, QTextEdit, QPushButton, QMessageBox,
+                             QFileDialog)
 from PyQt6.QtCore import Qt
-import os
 
-class CreateLessonDialog(QDialog):
-    def __init__(self, module_id: int, parent=None):
+class CreateTaskDialog(QDialog):
+    def __init__(self, lesson_id: int, parent=None):
         super().__init__(parent)
-        self.module_id = module_id
-        self.setWindowTitle("Создание урока")
+        self.lesson_id = lesson_id
+        self.setWindowTitle("Создание задачи")
         self.setMinimumWidth(400)
         
         # Создаем layout
@@ -16,7 +16,7 @@ class CreateLessonDialog(QDialog):
         
         # Поле для названия
         title_layout = QVBoxLayout()
-        title_label = QLabel("Название урока:")
+        title_label = QLabel("Название задачи:")
         self.title_edit = QLineEdit()
         title_layout.addWidget(title_label)
         title_layout.addWidget(self.title_edit)
@@ -24,10 +24,10 @@ class CreateLessonDialog(QDialog):
         
         # Поле для выбора файла
         file_layout = QVBoxLayout()
-        file_label = QLabel("Файл с уроком:")
+        file_label = QLabel("Файл с задачей:")
         self.file_path_edit = QLineEdit()
         self.file_path_edit.setReadOnly(True)
-        self.file_path_edit.setPlaceholderText("Выберите файл с уроком...")
+        self.file_path_edit.setPlaceholderText("Выберите файл с задачей...")
         select_file_button = QPushButton("Выбрать файл")
         select_file_button.clicked.connect(self.select_file)
         
@@ -50,16 +50,16 @@ class CreateLessonDialog(QDialog):
         layout.addLayout(buttons_layout)
     
     def select_file(self):
-        """Выбор файла с уроком"""
+        """Выбор файла с задачей"""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Выберите файл с уроком",
+            "Выберите файл с задачей",
             "",
             "Markdown Files (*.md);;All Files (*.*)"
         )
         if file_path:
             self.file_path_edit.setText(file_path)
     
-    def get_lesson_data(self) -> tuple[str, str]:
-        """Возвращает данные урока"""
-        return self.title_edit.text().strip(), self.file_path_edit.text().strip()
+    def get_task_data(self) -> tuple[str, str]:
+        """Возвращает данные задачи"""
+        return self.title_edit.text().strip(), self.file_path_edit.text().strip() 

@@ -4,6 +4,7 @@ from app.settings import AppSettings
 from app.ui.components.sidebar import Sidebar
 from app.ui.pages.courses_page import CoursesPage
 from app.ui.pages.modules_page import ModulesPage
+from app.ui.pages.lessons_page import LessonsPage
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -36,6 +37,11 @@ class MainWindow(QMainWindow):
         self.modules_page.tree_update_needed.connect(self.sidebar.refresh)
         self.content_stack.addWidget(self.modules_page)
         
+        # Создаем страницу уроков
+        self.lessons_page = LessonsPage()
+        self.lessons_page.tree_update_needed.connect(self.sidebar.refresh)
+        self.content_stack.addWidget(self.lessons_page)
+        
         # Добавляем виджеты в layout
         layout.addWidget(self.sidebar)
         layout.addWidget(self.content_stack)
@@ -48,6 +54,7 @@ class MainWindow(QMainWindow):
         self.sidebar.item_selected.connect(self.handle_item_selection)
         self.courses_page.tree_update_needed.connect(self.sidebar.refresh)
         self.modules_page.tree_update_needed.connect(self.sidebar.refresh)
+        self.lessons_page.tree_update_needed.connect(self.sidebar.refresh)
         self.courses_page.module_selected.connect(self.handle_module_selection)
     
     def handle_item_selection(self, item_type: str, item_id: int):
@@ -60,10 +67,15 @@ class MainWindow(QMainWindow):
             # Показываем страницу модулей
             self.modules_page.set_current_module(item_id)
             self.content_stack.setCurrentWidget(self.modules_page)
+        elif item_type == "lesson":
+            # Показываем страницу уроков
+            self.lessons_page.set_current_lesson(item_id)
+            self.content_stack.setCurrentWidget(self.lessons_page)
         else:
-            # Скрываем обе страницы
-            self.content_stack.setCurrentWidget(self.courses_page)
+            # Скрываем все страницы
             self.courses_page.set_current_course(None)
+            self.modules_page.set_current_module(None)
+            self.lessons_page.set_current_lesson(None)
     
     def handle_module_selection(self, module_id: int):
         """Обработка выбора модуля после его создания"""

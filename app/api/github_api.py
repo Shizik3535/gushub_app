@@ -101,9 +101,9 @@ class GitHubAPI:
         except GithubException as e:
             raise RuntimeError("Ошибка при обновлении урока: " + str(e))
         
-    def delete_lesson(self, repo: Repository.Repository, path: str, message: str = "Delete file or folder"):
+    def delete_lesson(self, repo: Repository.Repository, path: str, sha: str, message: str = "Delete file or folder"):
         try:
-            repo.delete_file(path, message, branch="main")
+            repo.delete_file(path, message, sha, branch="main")
         except GithubException as e:
             raise RuntimeError("Ошибка при удалении урока: " + str(e))
         
@@ -123,8 +123,8 @@ class GitHubAPI:
         except GithubException as e:
             raise RuntimeError("Ошибка при обновлении задания: " + str(e))
         
-    def delete_task(self, repo: Repository.Repository, path: str, message: str = "Delete file or folder"):
+    def delete_task(self, repo: Repository.Repository, path: str, sha: str, message: str = "Delete file or folder"):
         try:
-            repo.delete_file(path, message, branch="main")
+            repo.delete_file(path, message, sha, branch="main")
         except GithubException as e:
             raise RuntimeError("Ошибка при удалении задания: " + str(e))
