@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from app.database.database import Database
 from app.ui.forms.tasks_update_form import UpdateTaskDialog
 from app.api.github_api import GitHubAPI
+from app.api.gushub_api import GushubAPI
 from app.settings import AppSettings
 
 class TasksPage(QWidget):
@@ -15,6 +16,7 @@ class TasksPage(QWidget):
         self.db = Database()
         self.settings = AppSettings()
         self.github_api = GitHubAPI(self.settings.get_github_token())
+        self.gushub_api = GushubAPI()
         self.current_task_id = None
         
         # Создаем основной layout
@@ -170,6 +172,10 @@ class TasksPage(QWidget):
                                 contents = repo.get_contents(task['github_path'])
                                 # Удаляем задачу из репозитория
                                 self.github_api.delete_task(repo, task['github_path'], contents.sha)
+
+                                # Удаляем задачу из Gushub
+                                if task.get('site_id'):
+                                    self.gushub_api.delete_step(task['site_id'])
                 
                 # Удаляем задачу из базы данных
                 self.db.delete_task(self.current_task_id)

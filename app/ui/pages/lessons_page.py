@@ -277,9 +277,33 @@ class LessonsPage(QWidget):
                 
                 # Формируем raw URL для файла
                 raw_url = f"https://raw.githubusercontent.com/{self.github_api.user.login}/{repo.name}/main/{task_path}"
+                encoded_url = urllib.parse.quote(raw_url, safe=':/?=&')
                 
-                # Сохраняем задачу в базе данных
-                self.db.add_task(self.current_lesson_id, task_path, title, raw_url)
+                # Создаем задачу в Gushub
+                if lesson.get('site_id'):
+                    step_data = {
+                        'title': title,
+                        'urlMd': encoded_url,
+                        'type': 'ASSIGNMENT'
+                    }
+                    gushub_response = self.gushub_api.create_step(lesson['site_id'], step_data)
+                    
+                    # Сохраняем задачу в базе данных
+                    self.db.add_task(
+                        self.current_lesson_id,
+                        task_path,
+                        title,
+                        raw_url,
+                        site_id=gushub_response['id']
+                    )
+                else:
+                    # Сохраняем задачу в базе данных без site_id
+                    self.db.add_task(
+                        self.current_lesson_id,
+                        task_path,
+                        title,
+                        raw_url
+                    )
                 
                 # Обновляем дерево
                 self.tree_update_needed.emit()
