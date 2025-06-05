@@ -61,15 +61,23 @@ class GitHubAPI:
         """Удаляет модуль из репозитория"""
         try:
             # Получаем содержимое директории модуля
-            module_path = f"{module_name}/README.md"
-            contents = repo.get_contents(module_path)
+            contents = repo.get_contents(module_name)
             
-            # Удаляем файл модуля
-            repo.delete_file(
-                path=module_path,
-                message=f"Удаление модуля {module_name}",
-                sha=contents.sha
-            )
+            # Если это список файлов, удаляем каждый файл
+            if isinstance(contents, list):
+                for content in contents:
+                    repo.delete_file(
+                        path=content.path,
+                        message=f"Удаление файла {content.path} из модуля {module_name}",
+                        sha=content.sha
+                    )
+            # Если это один файл, удаляем его
+            else:
+                repo.delete_file(
+                    path=contents.path,
+                    message=f"Удаление модуля {module_name}",
+                    sha=contents.sha
+                )
             
         except Exception as e:
             raise Exception(f"Ошибка при удалении модуля: {str(e)}")
