@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
 from PyQt6.QtCore import Qt, pyqtSignal
 from app.database.database import Database
 from app.ui.forms.tasks_add_form import CreateTaskDialog
+from app.ui.forms.lessons_update_form import UpdateLessonDialog
 from app.api.github_api import GitHubAPI
 from app.settings import AppSettings
 
@@ -44,6 +45,10 @@ class LessonsPage(QWidget):
         buttons_layout = QHBoxLayout()
         buttons_layout.setSpacing(20)
 
+        self.update_lesson_button = QPushButton("Обновить контент")
+        self.update_lesson_button.clicked.connect(self.update_lesson)
+        self.update_lesson_button.setEnabled(False)
+        
         self.delete_lesson_button = QPushButton("Удалить урок")
         self.delete_lesson_button.clicked.connect(self.delete_lesson)
         self.delete_lesson_button.setEnabled(False)
@@ -52,6 +57,7 @@ class LessonsPage(QWidget):
         self.create_task_button.clicked.connect(self.create_task)
         self.create_task_button.setEnabled(False)
         
+        buttons_layout.addWidget(self.update_lesson_button)
         buttons_layout.addWidget(self.delete_lesson_button)
         buttons_layout.addWidget(self.create_task_button)
         
@@ -63,6 +69,7 @@ class LessonsPage(QWidget):
         
         if lesson_id is None:
             self.lesson_info.setText("<h2>Урок не выбран</h2>")
+            self.update_lesson_button.setEnabled(False)
             self.delete_lesson_button.setEnabled(False)
             self.create_task_button.setEnabled(False)
         else:
@@ -71,8 +78,65 @@ class LessonsPage(QWidget):
                 self.lesson_info.setText(
                     f"<h2><b>Название:</b> {lesson['title']}</h2>"
                 )
+                self.update_lesson_button.setEnabled(True)
                 self.delete_lesson_button.setEnabled(True)
                 self.create_task_button.setEnabled(True)
+    
+    def update_lesson(self):
+        """Обновление контента урока"""
+        if not self.current_lesson_id:
+            return
+            
+        # Получаем данные урока
+        lesson = self.db.get_lesson(self.current_lesson_id)
+        if not lesson:
+            return
+            
+        # Получаем данные модуля
+        module = self.db.get_module(lesson['module_id'])
+        if not module:
+            return
+            
+        # Получаем данные курса
+        course = self.db.get_course(module['course_id'])
+        if not course:
+            return
+            
+        # Создаем диалог
+        dialog = UpdateLessonDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            file_path = dialog.get_file_path()
+            
+            if not file_path:
+                QMessageBox.warning(self, "Ошибка", "Выберите файл с уроком")
+                return
+            
+            try:
+                # Получаем репозиторий курса
+                repo = self.github_api.get_course(course['title'])
+                if not repo:
+                    raise Exception("Не удалось получить репозиторий курса")
+                
+                # Получаем SHA хеш текущего файла
+                contents = repo.get_contents(lesson['github_path'])
+                
+                # Читаем содержимое нового файла
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Обновляем урок в GitHub
+                self.github_api.update_lesson(
+                    repo=repo,
+                    path=lesson['github_path'],
+                    new_content=content,
+                    commit_message=f"Update lesson {lesson['title']}",
+                    sha=contents.sha
+                )
+                
+                QMessageBox.information(self, "Успех", "Контент урока успешно обновлен")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Ошибка", f"Не удалось обновить контент урока: {str(e)}")
     
     def delete_lesson(self):
         """Удаление текущего урока"""
