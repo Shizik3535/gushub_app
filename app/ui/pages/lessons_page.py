@@ -5,7 +5,9 @@ from app.database.database import Database
 from app.ui.forms.tasks_add_form import CreateTaskDialog
 from app.ui.forms.lessons_update_form import UpdateLessonDialog
 from app.api.github_api import GitHubAPI
+from app.api.gushub_api import GushubAPI
 from app.settings import AppSettings
+import urllib.parse
 
 class LessonsPage(QWidget):
     # Сигнал для обновления дерева
@@ -16,6 +18,7 @@ class LessonsPage(QWidget):
         self.db = Database()
         self.settings = AppSettings()
         self.github_api = GitHubAPI(self.settings.get_github_token())
+        self.gushub_api = GushubAPI()
         self.current_lesson_id = None
         
         # Создаем основной layout
@@ -181,6 +184,10 @@ class LessonsPage(QWidget):
                             contents = repo.get_contents(lesson['github_path'])
                             # Удаляем урок из репозитория
                             self.github_api.delete_lesson(repo, lesson['github_path'], contents.sha)
+
+                            # Удаляем урок из Gushub
+                            if lesson.get('site_id'):
+                                self.gushub_api.delete_lesson(lesson['site_id'])
                 
                 # Удаляем урок из базы данных (это также удалит все связанные задачи)
                 self.db.delete_lesson(self.current_lesson_id)
