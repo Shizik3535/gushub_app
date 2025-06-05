@@ -97,6 +97,34 @@ class GroupResponse:
         self.updatedAt = updatedAt
         self._count = _count
 
+class GroupMemberUser:
+    def __init__(self, id: int, username: str, firstName: str, lastName: str, middleName: str, avatar: Optional[str]):
+        self.id = id
+        self.username = username
+        self.firstName = firstName
+        self.lastName = lastName
+        self.middleName = middleName
+        self.avatar = avatar
+
+class GroupMember:
+    def __init__(self, id: int, userId: int, groupId: int, joinedAt: datetime, user: GroupMemberUser):
+        self.id = id
+        self.userId = userId
+        self.groupId = groupId
+        self.joinedAt = joinedAt
+        self.user = user
+
+class GroupDetailResponse:
+    def __init__(self, id: int, name: str, description: str, inviteCode: str, createdAt: datetime, updatedAt: datetime, members: list, courses: list):
+        self.id = id
+        self.name = name
+        self.description = description
+        self.inviteCode = inviteCode
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.members = members  # List[GroupMember]
+        self.courses = courses  # List[CourseResponse] or just list
+
 # -- Users --
 class UserData:
     def __init__(self, username: str, firstName: str = "", lastName: str = "", middleName: str = ""):
@@ -106,21 +134,24 @@ class UserData:
         self.middleName = middleName
 
 class UserResponse:
-    def __init__(self, id: int, username: str, firstName: str, lastName: str, middleName: str,
-                 avatar: str | None, isAdmin: bool, isBlocked: bool, blockReason: str | None,
-                 createdAt: datetime, updatedAt: datetime, provider: str | None = None):
+    """Структура ответа для пользователя"""
+    def __init__(self, id: int, username: str, firstName: str, lastName: str,
+                isBlocked: bool = False,
+                role: Optional[str] = None,
+                email: Optional[str] = None,
+                blockReason: Optional[str] = None,
+                createdAt: Optional[datetime] = None,
+                updatedAt: Optional[datetime] = None):
         self.id = id
         self.username = username
         self.firstName = firstName
         self.lastName = lastName
-        self.middleName = middleName
-        self.avatar = avatar
-        self.isAdmin = isAdmin
+        self.email = email
+        self.role = role
         self.isBlocked = isBlocked
         self.blockReason = blockReason
         self.createdAt = createdAt
         self.updatedAt = updatedAt
-        self.provider = provider
 
 # -- Statistics --
 class CourseProgress:
@@ -327,25 +358,24 @@ class GushubAPI:
     # -- Statistics --
     # -- Users --
     def get_users(self) -> List[UserResponse]:
-        """Get all users"""
-        response = self._make_request('GET', '/api/users')
-        return [
-            UserResponse(
-                id=user['id'],
-                username=user['username'],
-                firstName=user['firstName'],
-                lastName=user['lastName'],
-                middleName=user['middleName'],
-                avatar=user['avatar'],
-                isAdmin=user['isAdmin'],
-                isBlocked=user['isBlocked'],
-                blockReason=user['blockReason'],
-                createdAt=datetime.fromisoformat(user['createdAt'].replace('Z', '+00:00')),
-                updatedAt=datetime.fromisoformat(user['updatedAt'].replace('Z', '+00:00')),
-                provider=user['provider']
+        """Получение списка пользователей"""
+        response = self._make_request("GET", "/api/users")
+        users = []
+        for user_data in response:
+            user = UserResponse(
+                id=user_data.get("id"),
+                username=user_data.get("username"),
+                firstName=user_data.get("firstName"),
+                lastName=user_data.get("lastName"),
+                email=user_data.get("email", None),
+                role=user_data.get("role", None),
+                isBlocked=user_data.get("isBlocked", False),
+                blockReason=user_data.get("blockReason", None),
+                createdAt=datetime.fromisoformat(user_data.get("createdAt").replace("Z", "+00:00")) if user_data.get("createdAt") else None,
+                updatedAt=datetime.fromisoformat(user_data.get("updatedAt").replace("Z", "+00:00")) if user_data.get("updatedAt") else None
             )
-            for user in response
-        ]
+            users.append(user)
+        return users
     
     def get_user(self, user_id: int) -> UserResponse:
         """Get user by id"""
@@ -355,19 +385,17 @@ class GushubAPI:
             username=response['username'],
             firstName=response['firstName'],
             lastName=response['lastName'],
-            middleName=response['middleName'],
-            avatar=response['avatar'],
-            isAdmin=response['isAdmin'],
+            email=response.get('email', None),
+            role=response.get('role', None),
             isBlocked=response['isBlocked'],
             blockReason=response['blockReason'],
             createdAt=datetime.fromisoformat(response['createdAt'].replace('Z', '+00:00')),
             updatedAt=datetime.fromisoformat(response['updatedAt'].replace('Z', '+00:00')),
-            provider=response.get('provider')  # provider может отсутствовать в ответе
         )
     
     def get_user_statistics(self, user_id: int) -> UserStatistics:
         """Get user statistics"""
-        response = self._make_request('GET', f'/api/users/{user_id}/statistics')
+        response = self._make_request('GET', f'/api/courses/users/{user_id}/statistics')
         
         # Преобразуем прогресс по курсам
         course_progress = [
@@ -393,7 +421,7 @@ class GushubAPI:
 
     def get_user_grades_statistics(self, user_id: int) -> UserGradesStatistics:
         """Get user grades statistics"""
-        response = self._make_request('GET', f'/api/users/{user_id}/grades/statistics')
+        response = self._make_request('GET', f'/api/courses/users/{user_id}/grades/statistics')
         
         # Преобразуем лучший урок, если он есть
         best_lesson = None
@@ -461,3 +489,37 @@ class GushubAPI:
             )
             for group in response
         ]
+    
+    def get_group(self, group_id: int) -> GroupDetailResponse:
+        """Get group by id with members and courses"""
+        response = self._make_request('GET', f'/api/groups/{group_id}')
+        members = [
+            GroupMember(
+                id=m['id'],
+                userId=m['userId'],
+                groupId=m['groupId'],
+                joinedAt=datetime.fromisoformat(m['joinedAt'].replace('Z', '+00:00')),
+                user=GroupMemberUser(
+                    id=m['user']['id'],
+                    username=m['user']['username'],
+                    firstName=m['user']['firstName'],
+                    lastName=m['user']['lastName'],
+                    middleName=m['user']['middleName'],
+                    avatar=m['user'].get('avatar')
+                )
+            )
+            for m in response.get('members', [])
+        ]
+        # courses можно обработать аналогично, если потребуется подробная структура
+        return GroupDetailResponse(
+            id=response['id'],
+            name=response['name'],
+            description=response['description'],
+            inviteCode=response['inviteCode'],
+            createdAt=datetime.fromisoformat(response['createdAt'].replace('Z', '+00:00')),
+            updatedAt=datetime.fromisoformat(response['updatedAt'].replace('Z', '+00:00')),
+            members=members,
+            courses=response.get('courses', [])
+        )
+
+

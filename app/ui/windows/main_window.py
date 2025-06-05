@@ -56,6 +56,7 @@ class MainWindow(QMainWindow):
         
         # Создаем страницу аналитики
         self.analytics_page = AnalyticsPage()
+        self.analytics_page.show_courses_page.connect(self.show_courses_page)
         self.content_stack.addWidget(self.analytics_page)
         
         # Добавляем виджеты в layout
