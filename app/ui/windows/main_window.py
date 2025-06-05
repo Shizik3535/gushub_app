@@ -7,6 +7,7 @@ from app.ui.pages.modules_page import ModulesPage
 from app.ui.pages.lessons_page import LessonsPage
 from app.ui.pages.tasks_page import TasksPage
 from app.ui.pages.settings_page import SettingsPage
+from app.ui.pages.analytics_page import AnalyticsPage
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -53,6 +54,10 @@ class MainWindow(QMainWindow):
         self.settings_page = SettingsPage()
         self.content_stack.addWidget(self.settings_page)
         
+        # Создаем страницу аналитики
+        self.analytics_page = AnalyticsPage()
+        self.content_stack.addWidget(self.analytics_page)
+        
         # Добавляем виджеты в layout
         layout.addWidget(self.sidebar)
         layout.addWidget(self.content_stack)
@@ -63,6 +68,7 @@ class MainWindow(QMainWindow):
         
         # Подключаем сигналы
         self.sidebar.item_selected.connect(self.handle_item_selection)
+        self.settings_page.show_courses_page.connect(self.show_courses_page)
         self.courses_page.tree_update_needed.connect(self.sidebar.refresh)
         self.modules_page.tree_update_needed.connect(self.sidebar.refresh)
         self.lessons_page.tree_update_needed.connect(self.sidebar.refresh)
@@ -90,6 +96,9 @@ class MainWindow(QMainWindow):
         elif item_type == "settings":
             # Показываем страницу настроек
             self.content_stack.setCurrentWidget(self.settings_page)
+        elif item_type == "analytics":
+            # Показываем страницу аналитики
+            self.content_stack.setCurrentWidget(self.analytics_page)
         else:
             # Скрываем все страницы
             self.courses_page.set_current_course(None)
@@ -101,3 +110,8 @@ class MainWindow(QMainWindow):
         """Обработка выбора модуля после его создания"""
         self.modules_page.set_current_module(module_id)
         self.content_stack.setCurrentWidget(self.modules_page)
+
+    def show_courses_page(self):
+        """Показывает страницу курсов"""
+        self.courses_page.set_current_course(None)
+        self.content_stack.setCurrentWidget(self.courses_page)

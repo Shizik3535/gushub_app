@@ -60,6 +60,7 @@ class Sidebar(QWidget):
         
         # Добавляем кнопки
         self.analysis_button = QPushButton("Анализ")
+        self.analysis_button.clicked.connect(self.handle_analysis_click)
         self.settings_button = QPushButton("Настройки")
         self.settings_button.clicked.connect(self.handle_settings_click)
         
@@ -136,3 +137,7 @@ class Sidebar(QWidget):
     def handle_settings_click(self):
         """Обработка клика по кнопке настроек"""
         self.item_selected.emit("settings", None)
+
+    def handle_analysis_click(self):
+        """Обработка клика по кнопке анализа"""
+        self.item_selected.emit("analytics", None)

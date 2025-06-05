@@ -1,12 +1,14 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                              QLabel, QMessageBox, QFrame, QSizePolicy)
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 
 from app.settings import AppSettings
 from app.api.github_api import GitHubAPI
 
 
 class SettingsPage(QWidget):
+    show_courses_page = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.settings = AppSettings()
@@ -45,15 +47,19 @@ class SettingsPage(QWidget):
         self.logout_button = QPushButton("Выйти")
         self.logout_button.clicked.connect(self.logout)
         
+        self.courses_button = QPushButton("Вернуться к курсам")
+        self.courses_button.clicked.connect(self.show_courses)
+        
         buttons_layout.addWidget(self.logout_button)
+        buttons_layout.addWidget(self.courses_button)
         
         main_layout.addLayout(buttons_layout)
     
     def logout(self):
-        """Выход из системы"""
+        """Выход из аккаунта"""
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("Подтверждение выхода")
-        msg_box.setText("Вы уверены, что хотите выйти? Все настройки будут сброшены.")
+        msg_box.setText("Вы уверены, что хотите выйти из аккаунта?")
         msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         msg_box.setDefaultButton(QMessageBox.StandardButton.No)
         
@@ -68,3 +74,7 @@ class SettingsPage(QWidget):
             self.settings.clear()
             # Закрываем приложение
             self.window().close() 
+        
+    def show_courses(self):
+        """Переход на страницу курсов"""
+        self.show_courses_page.emit() 
