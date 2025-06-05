@@ -29,7 +29,8 @@ class SettingsPage(QWidget):
         
         # Информация о текущем пользователе
         self.user_info = QLabel(
-            f"<h2><b>Текущий пользователь:</b> {self.github_api.user.login}</h2>"
+            f"<h2><b>Текущий пользователь GitHub:</b> {self.github_api.user.login}</h2>"
+            f"<h2><b>Текущий пользователь Gushub:</b> {self.settings.get_gushub_login()}</h2>"
         )
         self.user_info.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.user_info.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)

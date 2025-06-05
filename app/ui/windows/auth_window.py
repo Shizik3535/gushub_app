@@ -1,7 +1,9 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QLabel, QLineEdit, QPushButton, QMessageBox)
 from PyQt6.QtCore import Qt
+
 from app.settings import AppSettings
+from app.api.gushub_api import GushubAPI
 from app.ui.windows.main_window import MainWindow
 
 class AuthWindow(QMainWindow):
@@ -44,9 +46,14 @@ class AuthWindow(QMainWindow):
     def validate_gushub_credentials(self, login: str, password: str) -> bool:
         """
         Валидация учетных данных Gushub
-        TODO: Реализовать реальную валидацию
         """
-        return True
+        gushub_api = GushubAPI()
+        try:
+            response = gushub_api.login(login, password)
+            if response['user']['id'] is not None:
+                return True
+        except Exception as e:
+            return False
     
     def validate_github_token(self, token: str) -> bool:
         """

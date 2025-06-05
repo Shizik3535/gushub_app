@@ -14,9 +14,9 @@ class AppSettings:
         password = self.get_gushub_password()
         
         return (
-            github_token is not None and github_token != "" # and
-            # login is not None and login != "" and
-            # password is not None and password != ""
+            github_token is not None and github_token != "" and
+            login is not None and login != "" and
+            password is not None and password != ""
         )
     
     # GitHub Token

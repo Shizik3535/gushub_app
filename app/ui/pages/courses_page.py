@@ -5,6 +5,7 @@ from app.database.database import Database
 from app.ui.forms.courses_add_form import CreateCourseDialog
 from app.ui.forms.modules_add_form import CreateModuleDialog
 from app.api.github_api import GitHubAPI
+from app.api.gushub_api import GushubAPI
 from app.settings import AppSettings
 
 class CoursesPage(QWidget):
@@ -18,6 +19,7 @@ class CoursesPage(QWidget):
         self.db = Database()
         self.settings = AppSettings()
         self.github_api = GitHubAPI(self.settings.get_github_token())
+        self.gushub_api = GushubAPI()
         self.current_course_id = None
         
         # Создаем основной layout
@@ -86,7 +88,7 @@ class CoursesPage(QWidget):
         """Создание нового курса"""
         dialog = CreateCourseDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            title, description = dialog.get_course_data()
+            title, description, image_path = dialog.get_course_data()
             if title:  # Проверяем, что название не пустое
                 try:
                     # Проверяем, существует ли уже курс с таким названием
@@ -102,8 +104,25 @@ class CoursesPage(QWidget):
                     # Создаем репозиторий на GitHub
                     repo = self.github_api.create_course(title, description)
                     
+                    # Загружаем изображение в Gushub
+                    image_response = self.gushub_api.upload_photo(image_path)
+                    
+                    # Создаем курс в Gushub
+                    course_data = {
+                        'title': title,
+                        'description': description,
+                        'image': image_response['url']  # URL загруженного изображения
+                    }
+                    gushub_response = self.gushub_api.create_course(course_data)
+                    
                     # Добавляем курс в базу данных
-                    course_id = self.db.add_course(repo.html_url, title, description)
+                    course_id = self.db.add_course(
+                        github_path=repo.html_url,
+                        title=title,
+                        description=description,
+                        site_id=gushub_response['id']
+                    )
+                    
                     self.set_current_course(course_id)
                     # Отправляем сигнал для обновления дерева
                     self.tree_update_needed.emit()
@@ -143,10 +162,15 @@ class CoursesPage(QWidget):
             try:
                 # Получаем информацию о курсе
                 course = self.db.get_course(self.current_course_id)
-                if course and course['github_path']:
+                if course:
                     # Удаляем репозиторий на GitHub
-                    repo_name = course['github_path'].split('/')[-1]
-                    self.github_api.delete_course(repo_name)
+                    if course['github_path']:
+                        repo_name = course['github_path'].split('/')[-1]
+                        self.github_api.delete_course(repo_name)
+                    
+                    # Удаляем курс из Gushub
+                    if course.get('site_id'):
+                        self.gushub_api.delete_course(course['site_id'])
                 
                 # Удаляем курс из базы данных
                 self.db.delete_course(self.current_course_id)
@@ -196,20 +220,37 @@ class CoursesPage(QWidget):
                         # Создаем модуль в репозитории
                         module_path = self.github_api.create_module(repo, title, description)
                         
-                        # Добавляем модуль в базу данных
-                        module_id = self.db.add_module(self.current_course_id, module_path, title, description)
-                        # Отправляем сигнал для обновления дерева
-                        self.tree_update_needed.emit()
-                        
-                        # Показываем сообщение об успешном создании
-                        QMessageBox.information(
-                            self,
-                            "Успех",
-                            f"Модуль '{title}' успешно создан в курсе '{course['title']}'"
-                        )
-                        
-                        # Переходим к созданному модулю
-                        self.module_selected.emit(module_id)
+                        # Создаем модуль в Gushub
+                        if course.get('site_id'):
+                            module_data = {
+                                'title': title,
+                                'description': description
+                            }
+                            gushub_response = self.gushub_api.create_module(course['site_id'], module_data)
+                            
+                            # Добавляем модуль в базу данных
+                            module_id = self.db.add_module(
+                                self.current_course_id,
+                                module_path,
+                                title,
+                                description,
+                                site_id=gushub_response['id']
+                            )
+                            
+                            # Отправляем сигнал для обновления дерева
+                            self.tree_update_needed.emit()
+                            
+                            # Показываем сообщение об успешном создании
+                            QMessageBox.information(
+                                self,
+                                "Успех",
+                                f"Модуль '{title}' успешно создан в курсе '{course['title']}'"
+                            )
+                            
+                            # Переходим к созданному модулю
+                            self.module_selected.emit(module_id)
+                        else:
+                            raise Exception("Не найден ID курса в Gushub")
                     
                 except Exception as e:
                     QMessageBox.critical(

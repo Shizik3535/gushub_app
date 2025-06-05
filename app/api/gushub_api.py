@@ -1,6 +1,8 @@
 import requests
 from typing import Dict, Optional
 from datetime import datetime
+from app.settings import AppSettings
+import os
 
 
 # -- Courses --
@@ -81,6 +83,17 @@ class GushubAPI:
         self.user_id = None
         self.access_token = None
         self.refresh_token = None
+        
+        # Автоматическая авторизация при создании объекта
+        settings = AppSettings()
+        username = settings.get_gushub_login()
+        password = settings.get_gushub_password()
+        
+        if username and password:
+            try:
+                self.login(username, password)
+            except Exception as e:
+                print(f"Ошибка авторизации в Gushub: {str(e)}")
     
     def _make_request(self, method: str, endpoint: str, data: Optional[Dict] = None) -> Dict:
         """Make authenticated request to the API"""
@@ -122,7 +135,21 @@ class GushubAPI:
     # Upload photo
     def upload_photo(self, photo_path: str) -> Dict:
         """Upload photo"""
-        return self._make_request('POST', '/api/upload', {'photo': (photo_path, open(photo_path, 'rb'), 'image/jpeg')})
+        url = f"{self.BASE_URL}/api/uploads"
+        with open(photo_path, 'rb') as photo_file:
+            files = {
+                'file': (
+                    os.path.basename(photo_path),
+                    photo_file,
+                    'image/jpeg'
+                )
+            }
+            headers = {
+                'Accept': 'application/json'
+            }
+            response = self.session.post(url, files=files, headers=headers)
+            response.raise_for_status()
+            return response.json()
     
     # -- Courses --
     def create_course(self, course_data: Dict) -> Dict:
