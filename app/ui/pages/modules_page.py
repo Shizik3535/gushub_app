@@ -4,7 +4,9 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from app.database.database import Database
 from app.ui.forms.lessons_add_form import CreateLessonDialog
 from app.api.github_api import GitHubAPI
+from app.api.gushub_api import GushubAPI
 from app.settings import AppSettings
+import urllib.parse
 
 class ModulesPage(QWidget):
     # Сигнал для обновления дерева
@@ -15,6 +17,7 @@ class ModulesPage(QWidget):
         self.db = Database()
         self.settings = AppSettings()
         self.github_api = GitHubAPI(self.settings.get_github_token())
+        self.gushub_api = GushubAPI()
         self.current_module_id = None
         
         # Создаем основной layout
@@ -96,14 +99,18 @@ class ModulesPage(QWidget):
             try:
                 # Получаем информацию о модуле
                 module = self.db.get_module(self.current_module_id)
-                if module and module['github_path']:
+                if module:
                     # Получаем информацию о курсе
                     course = self.db.get_course(module['course_id'])
                     if course:
-                        # Получаем репозиторий курса
-                        repo = self.github_api.get_course(course['title'])
-                        # Удаляем модуль из репозитория
-                        self.github_api.delete_module(repo, module['title'])
+                        # Удаляем модуль из GitHub
+                        if module['github_path']:
+                            repo = self.github_api.get_course(course['title'])
+                            self.github_api.delete_module(repo, module['title'])
+                        
+                        # Удаляем модуль из Gushub
+                        if module.get('site_id'):
+                            self.gushub_api.delete_module(module['site_id'])
                 
                 # Удаляем модуль из базы данных
                 self.db.delete_module(self.current_module_id)
@@ -168,20 +175,39 @@ class ModulesPage(QWidget):
                         repo = self.github_api.get_course(course['title'])
                         # Создаем урок в репозитории
                         lesson_path = self.github_api.create_lesson(repo, module['title'], title, file_path)
-                        # Получаем raw URL для файла
+                        # Получаем raw URL для файла и кодируем его
                         raw_url = f"https://raw.githubusercontent.com/{self.github_api.user.login}/{repo.name}/main/{lesson_path}"
-                    
-                    # Добавляем урок в базу данных
-                    self.db.add_lesson(self.current_module_id, lesson_path, title, raw_url)
-                    # Отправляем сигнал для обновления дерева
-                    self.tree_update_needed.emit()
-                    
-                    # Показываем сообщение об успешном создании
-                    QMessageBox.information(
-                        self,
-                        "Успех",
-                        f"Урок '{title}' успешно создан в модуле '{module['title']}'"
-                    )
+                        encoded_url = urllib.parse.quote(raw_url, safe=':/?=&')
+                        
+                        # Создаем урок в Gushub
+                        if module.get('site_id'):
+                            # Преобразуем в словарь для отправки
+                            lesson_dict = {
+                                'title': title,
+                                'urlMd': encoded_url
+                            }
+                            gushub_response = self.gushub_api.create_lesson(module['site_id'], lesson_dict)
+                            
+                            # Добавляем урок в базу данных
+                            self.db.add_lesson(
+                                self.current_module_id,
+                                lesson_path,
+                                title,
+                                raw_url,  # Сохраняем оригинальный URL в базу
+                                site_id=gushub_response['id']
+                            )
+                            
+                            # Отправляем сигнал для обновления дерева
+                            self.tree_update_needed.emit()
+                            
+                            # Показываем сообщение об успешном создании
+                            QMessageBox.information(
+                                self,
+                                "Успех",
+                                f"Урок '{title}' успешно создан в модуле '{module['title']}'"
+                            )
+                        else:
+                            raise Exception("Не найден ID модуля в Gushub")
                     
                 except Exception as e:
                     QMessageBox.critical(
