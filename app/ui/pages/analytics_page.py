@@ -54,7 +54,7 @@ class StudentsListWidget(QWidget):
                 self.table.setItem(i, 0, QTableWidgetItem(user.username))
                 self.table.setItem(i, 1, QTableWidgetItem(f"{user.firstName} {user.lastName}".strip() or user.username))
         except Exception as e:
-            print(f"Ошибка при загрузке данных о студентах: {str(e)}")
+            pass
     
     def filter_students(self, text: str):
         """Фильтрация таблицы студентов"""
@@ -74,7 +74,7 @@ class StudentsListWidget(QWidget):
             student_id = users[row].id
             self.student_selected.emit(student_id)
         except Exception as e:
-            print(f"Ошибка при выборе студента: {str(e)}")
+            pass
 
 class GroupsListWidget(QWidget):
     """Виджет для отображения списка групп"""
@@ -122,7 +122,7 @@ class GroupsListWidget(QWidget):
                 self.table.setItem(i, 0, QTableWidgetItem(group.name))
                 self.table.setItem(i, 1, QTableWidgetItem(group.description))
         except Exception as e:
-            print(f"Ошибка при загрузке данных о группах: {str(e)}")
+            pass
     
     def filter_groups(self, text: str):
         """Фильтрация таблицы групп"""
@@ -142,7 +142,7 @@ class GroupsListWidget(QWidget):
             group_id = groups[row].id
             self.group_selected.emit(group_id)
         except Exception as e:
-            print(f"Ошибка при выборе группы: {str(e)}")
+            pass
 
 class StudentStatsWidget(QWidget):
     """Виджет для отображения статистики студента"""
@@ -248,11 +248,6 @@ class StudentStatsWidget(QWidget):
             grades_stats = self.gushub_api.get_user_grades_statistics(self.student_id)
             if not grades_stats:
                 raise Exception("Не удалось получить статистику оценок")
-
-            print(f"Данные получены успешно:")
-            print(f"User: {user}")
-            print(f"Stats: {stats}")
-            print(f"Grades: {grades_stats}")
 
             # Создаем новый Excel-файл
             wb = Workbook()
@@ -380,21 +375,12 @@ class StudentStatsWidget(QWidget):
                 file_path, _ = QFileDialog.getSaveFileName(self, "Сохранить файл", "", "Excel Files (*.xlsx)")
                 if file_path:
                     wb.save(file_path)
-                    print(f"Файл сохранен: {file_path}")
                     QMessageBox.information(self, "Успех", "Статистика успешно экспортирована в Excel!")
 
             except Exception as e:
-                print(f"Ошибка при формировании Excel-файла: {str(e)}")
                 raise
 
         except Exception as e:
-            import traceback
-            print(f"\nОшибка при экспорте в Excel:")
-            print(f"ID студента: {self.student_id}")
-            print(f"Тип ошибки: {type(e).__name__}")
-            print(f"Сообщение ошибки: {str(e)}")
-            print("Трассировка стека:")
-            print(traceback.format_exc())
             QMessageBox.critical(self, "Ошибка", f"Произошла ошибка при экспорте в Excel:\n{str(e)}")
 
     def load_data(self, student_id: int):
@@ -454,13 +440,6 @@ class StudentStatsWidget(QWidget):
             self.grades_label.setText(grades_text)
 
         except Exception as e:
-            import traceback
-            print(f"\nОшибка при загрузке статистики студента:")
-            print(f"ID студента: {student_id}")
-            print(f"Тип ошибки: {type(e).__name__}")
-            print(f"Сообщение ошибки: {str(e)}")
-            print("Трассировка стека:")
-            print(traceback.format_exc())
             self.info_label.setText("Ошибка при загрузке данных")
             self.courses_label.setText("")
             self.tasks_label.setText("")
@@ -556,9 +535,6 @@ class GroupStatsWidget(QWidget):
             group = self.gushub_api.get_group(self.group_id)
             if not group:
                 raise Exception("Не удалось получить данные группы")
-
-            print(f"Данные получены успешно:")
-            print(f"Group: {group}")
 
             # Создаем новый Excel-файл
             wb = Workbook()
@@ -685,21 +661,12 @@ class GroupStatsWidget(QWidget):
                 file_path, _ = QFileDialog.getSaveFileName(self, "Сохранить файл", "", "Excel Files (*.xlsx)")
                 if file_path:
                     wb.save(file_path)
-                    print(f"Файл сохранен: {file_path}")
                     QMessageBox.information(self, "Успех", "Статистика успешно экспортирована в Excel!")
 
             except Exception as e:
-                print(f"Ошибка при формировании Excel-файла: {str(e)}")
                 raise
 
         except Exception as e:
-            import traceback
-            print(f"\nОшибка при экспорте в Excel:")
-            print(f"ID группы: {self.group_id}")
-            print(f"Тип ошибки: {type(e).__name__}")
-            print(f"Сообщение ошибки: {str(e)}")
-            print("Трассировка стека:")
-            print(traceback.format_exc())
             QMessageBox.critical(self, "Ошибка", f"Произошла ошибка при экспорте в Excel:\n{str(e)}")
 
     def load_data(self, group_id: int):
@@ -761,13 +728,6 @@ class GroupStatsWidget(QWidget):
                 self.courses_label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
 
         except Exception as e:
-            import traceback
-            print(f"\nОшибка при загрузке статистики группы:")
-            print(f"ID группы: {group_id}")
-            print(f"Тип ошибки: {type(e).__name__}")
-            print(f"Сообщение ошибки: {str(e)}")
-            print("Трассировка стека:")
-            print(traceback.format_exc())
             self.info_label.setText("Ошибка при загрузке данных")
             self.members_table.setRowCount(0)
             self.courses_label.setText("")
@@ -783,7 +743,7 @@ class GroupStatsWidget(QWidget):
             student_id = self._member_ids[row]
             self.student_selected.emit(student_id)
         except Exception as e:
-            print(f"Ошибка при выборе студента из группы: {str(e)}")
+            pass
 
 class SelectionWidget(QWidget):
     """Виджет для выбора раздела аналитики"""
